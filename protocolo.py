@@ -8,7 +8,7 @@ class JogadaMessage:
     """Mensagem publicada na fila do RabbitMQ pelo FastAPI."""
     partida_id: str
     player_id: str
-    escolha: str  # "pedra" | "papel" | "tesoura"
+    escolha: str  # "pedra" "papel" "tesoura"
 
     def codificar(self) -> str:
         return json.dumps(asdict(self))
@@ -22,8 +22,8 @@ class JogadaMessage:
 class ResultadoPartida:
     """Estado de uma partida — salvo em memória pelo worker."""
     partida_id: str
-    jogadas: dict           # {player_id: escolha}
-    vencedor: Optional[str] = None   # player_id | "empate" | None
+    jogadas: dict          
+    vencedor: Optional[str] = None 
     encerrada: bool = False
 
     def to_dict(self) -> dict:

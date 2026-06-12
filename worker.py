@@ -13,7 +13,7 @@ log = obter_logger("Worker")
 RABBITMQ_URL = "amqp://guest:guest@localhost/"
 FILA_JOGADAS = "jogadas"
 CACHE_TTL    = 60
-PLACAR_TTL   = 3600  # histórico fica 1 hora no Redis
+PLACAR_TTL   = 3600 
 
 REGRAS = {
     "pedra":   "tesoura",
@@ -102,7 +102,7 @@ def processar_mensagem(ch, method, properties, body, partidas: dict, salas: dict
             except Exception as e:
                 log.warning(f"[Redis] Erro ao cachear resultado: {e}")
 
-            # Encontra a sala desta partida e atualiza o placar
+           
             sala_id = next((sid for sid, s in salas.items() if s["partida_id"] == msg.partida_id or
                            any(msg.player_id in s["jogadores"] for _ in [1])), None)
             # Busca sala pelo player_id

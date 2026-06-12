@@ -17,9 +17,6 @@ log = obter_logger("FastAPI")
 
 app = FastAPI(title="Pedra Papel Tesoura — API REST + RabbitMQ + Redis")
 
-# ---------------------------------------------------------------------------
-# Redis — cache distribuído
-# ---------------------------------------------------------------------------
 cache = redis.Redis(host="localhost", port=6379, db=0, decode_responses=True)
 CACHE_TTL = 60  # segundos que o resultado fica no cache
 
@@ -47,9 +44,7 @@ def cache_obter_resultado(partida_id: str) -> dict | None:
         return None
 
 
-# ---------------------------------------------------------------------------
-# Startup
-# ---------------------------------------------------------------------------
+
 @app.on_event("startup")
 def startup_event():
     from worker import iniciar_worker_background
@@ -90,9 +85,7 @@ def publicar_jogada(msg: JogadaMessage):
         raise HTTPException(status_code=503, detail="Fila indisponível. RabbitMQ offline?")
 
 
-# ---------------------------------------------------------------------------
-# Schemas
-# ---------------------------------------------------------------------------
+
 class EntrarPayload(BaseModel):
     sala_id: str | None = None
 
@@ -103,9 +96,6 @@ class JogadaPayload(BaseModel):
     escolha: str
 
 
-# ---------------------------------------------------------------------------
-# Rotas
-# ---------------------------------------------------------------------------
 @app.get("/")
 def raiz():
     return FileResponse("frontend/index.html")
@@ -168,18 +158,17 @@ def obter_resultado(partida_id: str):
     2º se não tiver no cache, busca da memória
     3º se a partida estiver encerrada, salva no cache para as próximas consultas
     """
-    # 1. Tenta o cache
+
     cached = cache_obter_resultado(partida_id)
     if cached:
         return cached
 
-    # 2. Busca da memória
     if partida_id not in partidas:
         raise HTTPException(status_code=404, detail="Partida não encontrada.")
 
     resultado = partidas[partida_id].to_dict()
 
-    # 3. Se encerrada, salva no cache
+    # salva no cache
     if resultado["encerrada"]:
         cache_salvar_resultado(partida_id, resultado)
 

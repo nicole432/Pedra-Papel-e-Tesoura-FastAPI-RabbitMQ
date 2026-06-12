@@ -39,7 +39,7 @@
       font-weight: 700;
       letter-spacing: -0.5px;
       margin-bottom: 6px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      background: #ffffff;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -293,8 +293,7 @@
 </head>
 <body>
 
-<h1>✌️ Pedra, Papel e Tesoura</h1>
-<p class="subtitle">Computação Distribuída — FastAPI + RabbitMQ</p>
+<h1>Pedra, Papel e Tesoura</h1>
 
 <div class="card">
 
@@ -304,7 +303,7 @@
       <label>Seu nome</label>
       <input type="text" id="input-nome" placeholder="Como você quer ser chamado?" maxlength="20"/>
     </div>
-    <button class="btn btn-primary btn-full" onclick="criarSala()">🎮 Criar Nova Sala</button>
+    <button class="btn btn-primary btn-full" onclick="criarSala()">Criar Nova Sala</button>
     <div class="sep">ou entre em uma sala existente</div>
     <div class="campo">
       <label>Código da sala</label>
@@ -320,7 +319,7 @@
       <div style="font-size:0.8rem;color:var(--muted);margin-bottom:4px">Código da sala</div>
       <div class="sala-badge">
         <span class="codigo" id="display-sala">------</span>
-        <button class="copiar-btn" onclick="copiarSala()">📋 Copiar</button>
+        <button class="copiar-btn" onclick="copiarSala()"> Copiar</button>
       </div>
     </div>
     <div id="status-aguardando" class="status-pill aguardando">
@@ -370,15 +369,15 @@
   <!-- ===== TELA: RESULTADO ===== -->
   <div id="tela-resultado" class="tela">
     <div class="resultado-box">
-      <div class="resultado-emoji" id="resultado-emoji">🏆</div>
+      <div class="resultado-emoji" id="resultado-emoji"></div>
       <div class="resultado-titulo" id="resultado-titulo">Vitória!</div>
       <div style="color:var(--muted);font-size:0.85rem;margin-top:4px" id="resultado-desc"></div>
       <div class="jogadas-resumo" id="jogadas-resumo"></div>
     </div>
 
     <div class="btn-row">
-      <button class="btn btn-success btn-full" onclick="novamente()">🔄 Jogar Novamente</button>
-      <button class="btn btn-secondary" onclick="verPlacar()">📊 Placar</button>
+      <button class="btn btn-success btn-full" onclick="novamente()"> Jogar Novamente</button>
+      <button class="btn btn-secondary" onclick="verPlacar()"> Placar</button>
       <button class="btn btn-secondary" onclick="sair()" style="min-width:80px">Sair</button>
     </div>
   </div>
@@ -386,7 +385,7 @@
   <!-- ===== TELA: PLACAR ===== -->
   <div id="tela-placar" class="tela">
     <div style="display:flex;justify-content:space-between;align-items:center">
-      <div style="font-weight:800;font-size:1.1rem">📊 Placar da Sala</div>
+      <div style="font-weight:800;font-size:1.1rem"> Placar da Sala</div>
       <div style="font-weight:800;letter-spacing:2px;color:var(--accent)" id="display-sala-placar">---</div>
     </div>
 
@@ -396,19 +395,13 @@
     <div id="placar-historico" style="display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto"></div>
 
     <div class="btn-row">
-      <button class="btn btn-primary btn-full" onclick="novamente()">🔄 Jogar Novamente</button>
+      <button class="btn btn-primary btn-full" onclick="novamente()"> Jogar Novamente</button>
       <button class="btn btn-secondary" onclick="sair()" style="min-width:80px">Sair</button>
     </div>
   </div>
 
 </div>
 
-<div class="tech-badge">
-  <span>🐍 FastAPI</span>
-  <span>🐇 RabbitMQ</span>
-  <span>🌐 REST API</span>
-  <span>📡 Polling</span>
-</div>
 
 <script>
   const API = '';  // mesmo host — ajuste se rodar em porta diferente
@@ -611,7 +604,7 @@
             <div style="font-size:0.75rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px">${label}</div>
             <div style="font-size:2rem;font-weight:800;color:var(--accent2)">${p.vitorias}</div>
             <div style="font-size:0.75rem;color:var(--muted)">vitórias</div>
-            <div style="font-size:0.75rem;color:var(--muted);margin-top:4px">${p.empates} emp · ${p.derrotas} der</div>
+           
           </div>`;
       });
 
@@ -669,15 +662,12 @@
     let emoji, titulo, classe;
 
     if (vencedor === 'empate') {
-      emoji  = '🤝';
       titulo = 'Empate!';
       classe = 'empate';
     } else if (vencedor === estado.playerId) {
-      emoji  = '🏆';
       titulo = 'Você venceu!';
       classe = 'vitoria';
     } else {
-      emoji  = '😔';
       titulo = 'Você perdeu...';
       classe = 'derrota';
     }
@@ -753,7 +743,7 @@
     navigator.clipboard.writeText(cod).then(() => {
       const btn = document.querySelector('.copiar-btn');
       btn.textContent = '✅ Copiado!';
-      setTimeout(() => btn.textContent = '📋 Copiar', 1500);
+      setTimeout(() => btn.textContent = ' Copiar', 1500);
     });
   }
 
