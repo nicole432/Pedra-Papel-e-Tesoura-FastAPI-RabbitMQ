@@ -378,6 +378,25 @@
 
     <div class="btn-row">
       <button class="btn btn-success btn-full" onclick="novamente()">🔄 Jogar Novamente</button>
+      <button class="btn btn-secondary" onclick="verPlacar()">📊 Placar</button>
+      <button class="btn btn-secondary" onclick="sair()" style="min-width:80px">Sair</button>
+    </div>
+  </div>
+
+  <!-- ===== TELA: PLACAR ===== -->
+  <div id="tela-placar" class="tela">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div style="font-weight:800;font-size:1.1rem">📊 Placar da Sala</div>
+      <div style="font-weight:800;letter-spacing:2px;color:var(--accent)" id="display-sala-placar">---</div>
+    </div>
+
+    <div id="placar-pontos" style="display:grid;grid-template-columns:1fr 1fr;gap:12px"></div>
+
+    <div style="font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted)">Histórico de Rodadas</div>
+    <div id="placar-historico" style="display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto"></div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary btn-full" onclick="novamente()">🔄 Jogar Novamente</button>
       <button class="btn btn-secondary" onclick="sair()" style="min-width:80px">Sair</button>
     </div>
   </div>
@@ -485,34 +504,19 @@
 
   // -------------------------------------------------------------------------
   // Polling: aguardando 2º jogador (Jogador 1)
+  // Fica verificando /sala/{id} até ter 2 jogadores confirmados
   // -------------------------------------------------------------------------
   function iniciarPollingAguardando() {
     pollingInterval = setInterval(async () => {
       try {
-        const res  = await fetch(`${API}/resultado/${estado.partidaId}`);
+        const res  = await fetch(`${API}/sala/${estado.salaId}`);
         const data = await res.json();
-
-        // Quando jogadas tiver ao menos 1 chave que não é o nosso ID → alguém entrou
-        const ids = Object.keys(data.jogadas || {});
-        const temOponente = ids.some(id => id !== estado.playerId) || ids.length >= 1;
-
-        // Heurística: se a partida tem pelo menos 0 jogadas registradas mas foi criada,
-        // verificamos se há 2 jogadores via sala — mas como não temos endpoint /sala,
-        // simplificamos: quando o jogador 1 ainda não jogou e não tem jogadas → aguardando;
-        // assim que o jogador 2 entra, ele já aparece na tela de jogo por causa do entrar().
-        // Aqui só precisamos aguardar que o estado mude de alguma forma.
-        // Solução simples: após 1s de polling, se chegarmos aqui sem erro, o servidor está OK.
-        // Jogador 2 entrará e chamará iniciarJogo() sozinho.
-
-      } catch (_) { /* ignora erros de rede temporários */ }
-    }, 2000);
-
-    // Simples: o Jogador 1 vai para a tela de jogo após 2s de espera
-    // (o Jogador 2 terá entrado no servidor — o polling de resultado cuidará do resto)
-    setTimeout(() => {
-      pararPolling();
-      iniciarJogo();
-    }, 2500);
+        if (data.jogadores >= 2) {
+          pararPolling();
+          iniciarJogo();
+        }
+      } catch (_) { /* ignora erros temporários */ }
+    }, 1500);
   }
 
   // -------------------------------------------------------------------------
@@ -544,13 +548,18 @@
 
     habilitarEscolhas(false);
     document.getElementById(`btn-${escolha}`).classList.add('selecionado');
-    document.getElementById(`btn-${escolha}`).disabled = false; // mantém visível
+    document.getElementById(`btn-${escolha}`).disabled = false;
 
     const statusEl = document.getElementById('status-jogo');
     statusEl.innerHTML = '<span class="dot"></span> Jogada enviada!';
     statusEl.className = 'status-pill pronto';
 
     try {
+      // Sempre busca o partida_id atual da sala antes de jogar
+      const salaRes = await fetch(`${API}/sala/${estado.salaId}`);
+      const salaData = await salaRes.json();
+      if (salaRes.ok) estado.partidaId = salaData.partida_id;
+
       const res = await fetch(`${API}/jogada`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -580,7 +589,61 @@
   // -------------------------------------------------------------------------
   // Polling: aguardando resultado
   // -------------------------------------------------------------------------
-  const EMOJIS = { pedra: '🪨', papel: '📄', tesoura: '✂️' };
+  const EMOJIS      = { pedra: '🪨', papel: '📄', tesoura: '✂️' };
+  const NOMES_CURTOS = {};  // player_id -> "J1" ou "J2"
+
+  async function verPlacar() {
+    try {
+      const res  = await fetch(`${API}/placar/${estado.salaId}`);
+      const data = await res.json();
+
+      document.getElementById('display-sala-placar').textContent = estado.salaId;
+
+      // Pontos
+      const pontosEl = document.getElementById('placar-pontos');
+      pontosEl.innerHTML = '';
+      const ids = Object.keys(data.pontos || {});
+      ids.forEach((pid, i) => {
+        const p = data.pontos[pid];
+        const label = pid === estado.playerId ? 'Você' : 'Oponente';
+        pontosEl.innerHTML += `
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center">
+            <div style="font-size:0.75rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px">${label}</div>
+            <div style="font-size:2rem;font-weight:800;color:var(--accent2)">${p.vitorias}</div>
+            <div style="font-size:0.75rem;color:var(--muted)">vitórias</div>
+            <div style="font-size:0.75rem;color:var(--muted);margin-top:4px">${p.empates} emp · ${p.derrotas} der</div>
+          </div>`;
+      });
+
+      // Histórico
+      const histEl = document.getElementById('placar-historico');
+      histEl.innerHTML = '';
+      if (!data.rodadas || data.rodadas.length === 0) {
+        histEl.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;text-align:center">Nenhuma rodada ainda.</div>';
+      } else {
+        [...data.rodadas].reverse().forEach(r => {
+          const minhaEsc = r.jogadas[estado.playerId] || '?';
+          const outroId  = Object.keys(r.jogadas).find(id => id !== estado.playerId);
+          const outroEsc = outroId ? r.jogadas[outroId] : '?';
+          let resultado, cor;
+          if (r.vencedor === 'empate')            { resultado = 'Empate';  cor = 'var(--warn)'; }
+          else if (r.vencedor === estado.playerId){ resultado = 'Vitória'; cor = 'var(--accent2)'; }
+          else                                    { resultado = 'Derrota'; cor = 'var(--danger)'; }
+
+          histEl.innerHTML += `
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;font-size:0.85rem">
+              <span style="color:var(--muted)">Rodada ${r.rodada}</span>
+              <span>${EMOJIS[minhaEsc] || '?'} <span style="color:var(--muted)">vs</span> ${EMOJIS[outroEsc] || '?'}</span>
+              <span style="font-weight:700;color:${cor}">${resultado}</span>
+            </div>`;
+        });
+      }
+
+      mostrarTela('tela-placar');
+    } catch (e) {
+      alert('Erro ao buscar placar: ' + e.message);
+    }
+  }
 
   function iniciarPollingResultado() {
     pollingInterval = setInterval(async () => {
@@ -646,10 +709,19 @@
   // -------------------------------------------------------------------------
   async function novamente() {
     try {
-      const res  = await fetch(`${API}/nova-partida/${estado.salaId}`, { method: 'POST' });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail);
-      estado.partidaId = data.partida_id;
+      if (estado.posicao === 1) {
+        // Jogador 1 cria nova partida na sala
+        const res  = await fetch(`${API}/nova-partida/${estado.salaId}`, { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail);
+        estado.partidaId = data.partida_id;
+      } else {
+        // Jogador 2 busca o novo partida_id que o Jogador 1 criou
+        const res  = await fetch(`${API}/sala/${estado.salaId}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail);
+        estado.partidaId = data.partida_id;
+      }
       estado.jogou = false;
       iniciarJogo();
     } catch (e) {
@@ -657,8 +729,18 @@
     }
   }
 
-  function sair() {
+  async function sair() {
     pararPolling();
+    // Avisa o servidor que este jogador saiu da sala
+    if (estado.playerId && estado.salaId) {
+      try {
+        await fetch(`${API}/sair`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ player_id: estado.playerId, sala_id: estado.salaId }),
+        });
+      } catch (_) {}
+    }
     estado = { nome:'', playerId:null, salaId:null, partidaId:null, posicao:null, jogou:false };
     document.getElementById('input-nome').value = '';
     document.getElementById('input-sala').value = '';
